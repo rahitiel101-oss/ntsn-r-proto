@@ -2180,6 +2180,22 @@ cc.style.display="none";
   frameLayer.id='after-story-layer';
   frameLayer.innerHTML='<iframe id="after-story-frame" title="After Story" allow="autoplay" loading="eager"></iframe>';
   document.body.appendChild(frameLayer);
+  // Cover the parent game's night-sea background before navigation and
+  // keep it covered until the After Story iframe finishes initializing.
+  var afterBlackout=document.createElement('div');
+  afterBlackout.id='after-story-transition-blackout';
+  afterBlackout.style.cssText='position:fixed;inset:0;width:100%;height:100%;background:#000;z-index:1000000;display:none;pointer-events:none;';
+  document.body.appendChild(afterBlackout);
+  var afterLoadToken=0;
+  function showAfterBlackout(){afterBlackout.style.display='block';}
+  function hideAfterBlackout(){afterBlackout.style.display='none';}
+  document.getElementById('after-story-frame').addEventListener('load',function(){
+    if(!opened)return;
+    var token=afterLoadToken;
+    requestAnimationFrame(function(){requestAnimationFrame(function(){
+      if(opened && token===afterLoadToken)hideAfterBlackout();
+    });});
+  });
   var finishMainEnding=null;
   var opened=false;
   function hideChoice(){panel.classList.remove('visible');}
@@ -2202,6 +2218,8 @@ cc.style.display="none";
   function startAfter(){
     if(opened)return;
     opened=true;
+    afterLoadToken++;
+    showAfterBlackout();
     hideChoice();
     var frame=document.getElementById('after-story-frame');
     frameLayer.classList.add('visible');
@@ -2210,12 +2228,17 @@ cc.style.display="none";
   function closeAfter(){
     if(!opened)return;
     opened=false;
+    afterLoadToken++;
+    hideAfterBlackout();
     frameLayer.classList.remove('visible');
     document.getElementById('after-story-frame').removeAttribute('src');
     finishToTop();
   }
   document.getElementById('after-choice-top').addEventListener('click',function(e){e.stopPropagation();finishToTop();});
-  document.getElementById('after-choice-start').addEventListener('click',function(e){e.stopPropagation();startAfter();});
+  var afterChoiceStart=document.getElementById('after-choice-start');
+  afterChoiceStart.addEventListener('pointerdown',showAfterBlackout,{passive:true});
+  afterChoiceStart.addEventListener('touchstart',showAfterBlackout,{passive:true});
+  afterChoiceStart.addEventListener('click',function(e){e.stopPropagation();startAfter();});
   function openAfterFromChapter(e){
     if(e.preventDefault)e.preventDefault();
     e.stopPropagation();
@@ -2223,6 +2246,8 @@ cc.style.display="none";
     startAfter();
   }
   var afterChapterBtn=document.getElementById('btn-ch-after-story');
+  afterChapterBtn.addEventListener('pointerdown',showAfterBlackout,{passive:true});
+  afterChapterBtn.addEventListener('touchstart',showAfterBlackout,{passive:true});
   afterChapterBtn.addEventListener('touchend',openAfterFromChapter,{passive:false});
   afterChapterBtn.addEventListener('click',openAfterFromChapter);
   window.addEventListener('message',function(e){
